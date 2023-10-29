@@ -134,7 +134,7 @@ function write_cookie($token, $sequence, $expiration)
         encode_cookie($token, $sequence),
         $expiration,
         BASE_URL_DIRECTORY,
-        null,
+        '',
         Helper\is_secure_connection(),
         true
     );
@@ -156,7 +156,7 @@ function delete_cookie()
         '',
         time() - 3600,
         BASE_URL_DIRECTORY,
-        null,
+        '',
         Helper\is_secure_connection(),
         true
     );
