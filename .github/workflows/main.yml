@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    uses: ktomk/run-travis-yml@v1
+    uses: ktomk/run-travis-yml@v1.8.1
     with:
         file: .travis.yml
         steps: |
