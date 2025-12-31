@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: [7.0, 5.6, 5.5, 5.4, 5.3]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, pdo, pdo_mysql, pdo_pgsql
+          coverage: none
+
+      - name: Install Apache + FastCGI
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y apache2 libapache2-mod-fastcgi
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Before script
+        run: |
+          ./tests/ci/install.sh
+          npm install
+
+      - name: Run JSHint
+        run: ./node_modules/.bin/jshint assets/js/src/*.js
+
+      - name: PHPUnit - SQLite Unit Tests
+        run: ./vendor/bin/phpunit -c tests/phpunit.unit.sqlite.xml
+
+      - name: PHPUnit - Postgres Unit Tests
+        run: ./vendor/bin/phpunit -c tests/phpunit.unit.postgres.xml
+
+      - name: PHPUnit - MySQL Unit Tests
+        run: ./vendor/bin/phpunit -c tests/phpunit.unit.mysql.xml
+
+      - name: PHPUnit - SQLite Functional Tests
+        run: ./vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
+
+      - name: PHPUnit - Postgres Functional Tests
+        run: |
+          cp ./tests/ci/config.postgres.php config.php
+          ./vendor/bin/phpunit -c tests/phpunit.functional.postgres.xml tests/functional/ApiTest.php
+          ./vendor/bin/phpunit -c tests/phpunit.functional.postgres.xml tests/functional/FeverApiTest.php
+
+      - name: PHPUnit - MySQL Functional Tests
+        run: |
+          cp ./tests/ci/config.mysql.php config.php
+          ./vendor/bin/phpunit -c tests/phpunit.functional.mysql.xml tests/functional/ApiTest.php
+          ./vendor/bin/phpunit -c tests/phpunit.functional.mysql.xml tests/functional/FeverApiTest.php
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          cat apache_error.log || true
+          cat apache_access.log || true
