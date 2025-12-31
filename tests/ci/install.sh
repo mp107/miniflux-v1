@@ -15,7 +15,14 @@ echo "opcache.enable = 0" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.i
 sudo a2enmod rewrite actions fcgid alias ssl
 
 sudo cp -f tests/ci/apache_vhost.conf /etc/apache2/sites-available/000-default.conf
-sudo sed -e "s?%GITHUB_WORKSPACE%?$(pwd)?g" --in-place /etc/apache2/sites-available/000-default.conf
+
+echo "define('DEBUG_MODE', false);" | sudo tee -a config.php
+echo "define('DEBUG_FILENAME', '/var/www/app/data/debug.log')" | sudo tee -a config.php
+
+sudo mkdir -p /var/www/app
+sudo cp -r . /var/www/app
+sudo chown -R www-data:www-data /var/www/app
+
 sudo service apache2 restart
 
 cp assets/img/
