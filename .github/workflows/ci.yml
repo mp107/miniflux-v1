@@ -33,8 +33,10 @@ jobs:
 
       - name: Install Apache + FastCGI
         run: |
-          sudo apt-get install -y apache2 libapache2-mod-fcgid
-          sudo a2enmod actions fcgid alias proxy_fcgi
+          sudo apt-get install -y apache2 libapache2-mod-fcgid php${{ matrix.php-version }}-fpm
+          sudo a2enconf php${{ matrix.php-version }}-fpm
+          sudo systemctl restart apache2
+
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
