@@ -76,5 +76,5 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          cat apache_error.log || true
-          cat apache_access.log || true
+          cat /var/log/apache2/error.log || true
+          cat /var/log/apache2/access.log || true
