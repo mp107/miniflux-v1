@@ -26,9 +26,13 @@ jobs:
           extensions: mbstring, pdo, pdo_mysql, pdo_pgsql
           coverage: none
 
-      - name: Install Apache + FastCGI
+      - name: Fix dependency conflicts
         run: |
           sudo apt-get update -qq
+          sudo apt-get install -y libsqlite3-0=3.37.2-2ubuntu0.5 libsqlite3-dev sqlite3
+
+      - name: Install Apache + FastCGI
+        run: |
           sudo apt-get install -y apache2 libapache2-mod-fcgid
           sudo a2enmod actions fcgid alias proxy_fcgi
 
