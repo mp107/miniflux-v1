@@ -12,7 +12,7 @@ echo "opcache.enable = 0" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.i
 
 ~/.phpenv/versions/$(phpenv version-name)/sbin/php-fpm
 
-sudo a2enmod rewrite actions fastcgi alias ssl
+sudo a2enmod rewrite actions fcgid alias ssl
 
 sudo cp -f tests/ci/apache_vhost.conf /etc/apache2/sites-available/default
 sudo sed -e "s?%TRAVIS_BUILD_DIR%?$(pwd)?g" --in-place /etc/apache2/sites-available/default
