@@ -29,3 +29,4 @@ sudo service apache2 restart
 cp assets/img/
 
 ls -al
+ls -al /etc/php/
