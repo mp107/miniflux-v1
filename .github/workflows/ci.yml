@@ -20,7 +20,7 @@ env:
   COMPOSER_FLAGS: --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
 jobs:
-  php-tests-modern:
+  php-tests:
     name: PHP ${{ matrix.php }} - ${{ matrix.db }}
     runs-on: ubuntu-latest
     strategy:
@@ -54,6 +54,7 @@ jobs:
           MYSQL_DATABASE: miniflux_test
         ports:
           - 3306:3306
+
     steps:
       - uses: actions/checkout@v4
 
@@ -77,7 +78,7 @@ jobs:
   functional-tests:
     name: Functional Tests (SQLite)
     runs-on: ubuntu-latest
-    needs: [php-tests-modern]
+    needs: [php-tests]
 
     steps:
       - uses: actions/checkout@v4
@@ -87,10 +88,17 @@ jobs:
           php-version: '5.6'
           extensions: mbstring, xml, json, curl, dom
           coverage: none
+          tools: composer:v2
 
       - run: composer install ${{ env.COMPOSER_FLAGS }}
 
-      - run: vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
+      - name: Start PHP built-in server
+        run: |
+          php -S 127.0.0.1:8080 -t . &
+          sleep 3
+
+      - name: Run functional tests
+        run: vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
 
   # security-scan:
   #   name: Security Scan
@@ -112,7 +120,7 @@ jobs:
   build-docker:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: [php-tests-modern, functional-tests]
+    needs: [php-tests, functional-tests]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
     steps:
