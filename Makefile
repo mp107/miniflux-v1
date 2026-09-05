@@ -4,8 +4,36 @@
 .PHONY: unit-test-sqlite
 .PHONY: unit-test-postgres
 .PHONY: unit-test-mysql
+.PHONY: all-tests
+.PHONY: test
 .PHONY: sync-locales
 .PHONY: find-locales
+
+# Default test target
+test:
+	@$(MAKE) unit-test-sqlite
+
+# Run all unit tests across all database backends
+all-tests: unit-test-sqlite unit-test-postgres unit-test-mysql
+	@echo "All unit tests passed!"
+
+# Run functional tests
+functional-tests:
+	@rm -f data/db.sqlite
+	@./vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
+
+# Run all tests (unit + functional)
+full-test: all-tests functional-tests
+	@echo "All tests completed!"
+
+# Lint PHP files
+lint-php:
+	@find . -name "*.php" -not -path "./vendor/*" -not -path "./assets/*" | xargs php -l
+
+# Lint JavaScript files
+lint-js:
+	@npm install
+	@./node_modules/.bin/jshint assets/js/src/*.js
 
 CSS_FILE = assets/css/app.min.css
 JS_FILE = assets/js/app.min.js

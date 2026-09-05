@@ -1,0 +1,31 @@
+[title]
+description = "Miniflux v1 Legacy Gitleaks Configuration"
+
+[allowlist]
+description = "List of allow-listed patterns"
+paths = ["docs/"]
+regexes = ["TODO.*fixme", "placeholder"]
+words = [
+  "INSERT_SQL_HERE",
+  "SELECT_SQL_HERE",
+]
+
+[[rules]]
+description = "PostgreSQL Connection String"
+regex = '''postgresql://[^\s]+''
+tags = ["key", "postgres"]
+
+[[rules]]
+description = "MySQL Connection String"
+regex = '''mysql://[^\s]+'''
+tags = ["key", "mysql"]
+
+[[rules]]
+description = "Generic Database Password"
+regex = '''DB_PASSWORD\s*=\s*['\"][^'\"]{8,}['\"]'''
+tags = ["key", "password"]
+
+[[rules]]
+description = "Private Key"
+regex = '''-----BEGIN.*PRIVATE KEY-----'''
+tags = ["key", "rsa"]

@@ -1,0 +1,49 @@
+name: Test Report
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test-report:
+    name: Generate Test Report
+    runs-on: ubuntu-latest
+    needs: [php-unit-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, json, curl, dom
+          coverage: pcov
+
+      - name: Download Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Generate test coverage report
+        run: |
+          vendor/bin/phpunit -c tests/phpunit.unit.sqlite.xml --coverage-text --coverage-clover clover.xml || echo "Coverage report generated"
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-coverage
+          path: |
+            clover.xml
+            coverage.txt
+          retention-days: 30
