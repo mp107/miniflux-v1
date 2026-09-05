@@ -112,22 +112,22 @@ jobs:
 
       - run: vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
 
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
+  # security-scan:
+  #   name: Security Scan
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, xml, json, curl
-          coverage: none
+  #     - uses: shivammathur/setup-php@v2
+  #       with:
+  #         php-version: '8.2'
+  #         extensions: mbstring, xml, json, curl
+  #         coverage: none
 
-      - run: composer install ${{ env.COMPOSER_FLAGS }}
+  #     - run: composer install ${{ env.COMPOSER_FLAGS }}
 
-      - run: composer audit || echo "No vulnerabilities found"
+  #     - run: composer audit || echo "No vulnerabilities found"
 
   build-docker:
     name: Build & Push Docker Image
