@@ -1,4 +1,117 @@
 name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'develop'
+  pull_request:
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  # ===========================================================================
+  # PHP Compatibility Matrix - Unit Tests
+  # ===========================================================================
+  php-unit-tests:
+    name: Unit Tests (PHP ${{ matrix.php }}, ${{ matrix.db }})
+    runs-on: ubuntu-latest
+    fail-fast: false
+    strategy:
+      matrix:
+        php: ['8.2', '8.1', '8.0', '7.4', '7.3']
+        db: [sqlite, postgres, mysql]
+        exclude:
+          - db: postgres
+            php: '7.3'
+          - db: mysql
+            php: '7.3'
+      fail-fast: false
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: miniflux_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: miniflux_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, xml, json, curl, dom
+          coverage: none
+          tools: composer:v2
+
+      - name: Download Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ matrix.php }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-${{ matrix.php }}-composer-
+            ${{ runner.os }}-php-composer-
+
+      - name: Run PHP syntax check
+        run: find . -name "*.php" -not -path "./vendor/*" -not -path "./assets/*" | xargs -r php -l
+
+      - name: Run Unit Tests (${{ matrix.db }})
+        run: |
+          phpunit_config="tests/phpunit.unit.${{ matrix.db }}.xml"
+          vendor/bin/phpunit -c "$phpunit_config"
+        env:
+          DB_HOSTNAME: ${{ matrix.db == 'sqlite' && 'localhost' || '127.0.0.1' }}
+          DB_USERNAME: ${{ matrix.db == 'sqlite' && 'root' || (matrix.db == 'postgres' && 'postgres') || 'root' }}
+          DB_PASSWORD: ${{ matrix.db == 'sqlite' && '' || 'postgres' }}
+
+  # ===========================================================================
+  # Functional Tests
+  # ===========================================================================
+  functional-tests:
+    name: Functional Tests (SQLite)
+    runs-on: ubuntu-latest
+    needs: php-unit-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
