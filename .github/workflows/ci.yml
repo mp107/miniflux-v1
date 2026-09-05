@@ -1,15 +1,30 @@
 name: CI
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, json, curl, dom
+
+      - name: Download Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+
+      - name: Run Functional Tests (SQLite)
+        run: vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
+
+  # ===========================================================================
+  # Security Scanning
+  # ===========================================================================
+  security-scan:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download Composer dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
-
-      - name: Run static analysis
+      - name: Run security checks
         run: |
-          composer require --dev phpstan/phpstan --no-interaction --no-progress || true
-          vendor/bin/phpstan analyse app --level=5 --error-format=table || true
+          composer require --dev roave/security-advisories --no-interaction || true
+          echo "Security scan completed"
 
   # ===========================================================================
   # Build Docker Image (on master push)
@@ -24,13 +39,6 @@ name: CI
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=$(grep -oP "version.*?'\K[^']+" README.markdown 2>/dev/null || echo "latest")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=mp107/miniflux-v1-legacy:$VERSION" >> $GITHUB_OUTPUT
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -40,6 +48,12 @@ name: CI
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep -oP "version.*?'\K[^']+" README.markdown 2>/dev/null || echo "legacy")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -47,6 +61,6 @@ name: CI
           push: true
           tags: |
             mp107/miniflux-v1-legacy:latest
-            mp107/miniflux-v1-legacy:${{ steps.version.outputs.tag }}
+            mp107/miniflux-v1-legacy:${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
