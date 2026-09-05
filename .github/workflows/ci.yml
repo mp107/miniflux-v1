@@ -1,4 +1,44 @@
 name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'develop'
+  pull_request:
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  php-tests:
+    name: PHP Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.1', '8.0', '7.4']
+        db: [sqlite, postgres, mysql]
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: miniflux_test
+        ports:
+          - 5432:5432
+
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: miniflux_test
         ports:
           - 3306:3306

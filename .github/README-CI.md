@@ -1,3 +1,5 @@
+# CI/CD for Miniflux v1 Legacy
+
 ## Overview
 
 This document describes the Continuous Integration and Deployment pipeline for the Miniflux v1 legacy fork.
