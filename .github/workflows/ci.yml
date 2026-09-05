@@ -93,24 +93,10 @@ jobs:
       - run: composer install ${{ env.COMPOSER_FLAGS }}
 
       - name: Start PHP server
-        run: |
-          # Start server in background with nohup to keep it running
-          nohup php -S 127.0.0.1:8080 -t . > /dev/null 2>&1 &
-          # Wait for server to be ready
-          sleep 5
-          # Verify server is running
-          max_retries=10
-          retry=0
-          while [ $retry -lt $max_retries ]; do
-            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ 2>/dev/null | grep -q "200\|404"; then
-              echo "Server is ready"
-              exit 0
-            fi
-            retry=$((retry+1))
-            sleep 2
-          done
-          echo "Server failed to start"
-          exit 1
+        uses: webfactory/php-server@v2
+        with:
+          working_directory: ./
+          port: 8080
 
       - name: Run functional tests
         run: vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
