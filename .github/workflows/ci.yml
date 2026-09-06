@@ -95,7 +95,9 @@ jobs:
               
               # Test JSON-RPC endpoint specifically
               echo "Testing JSON-RPC endpoint..."
-              curl -v http://127.0.0.1:8080/jsonrpc.php
+              curl -v -X POST -H "Content-Type: application/json" \
+                -d '{"jsonrpc":"2.0","method":"getVersion","id":1}' \
+                http://127.0.0.1:8080/jsonrpc.php
               
               echo "--- Running functional tests ---"
               set +e 
