@@ -18,7 +18,6 @@ permissions:
 
 env:
   COMPOSER_FLAGS: --no-interaction --prefer-dist --no-progress --optimize-autoloader
-
 jobs:
   # ===========================================================================
   # PHP Tests - Unit tests across all PHP versions
@@ -40,10 +39,13 @@ jobs:
           extensions: mbstring, xml, json, curl, dom
           coverage: none
           tools: composer:v2
+          ini-values: |
+            allow_url_fopen = On
+            allow_url_include = Off
 
       - run: composer install ${{ env.COMPOSER_FLAGS }}
 
-      - name: PHP syntax lint
+      - name: PHP syntax check
         run: find . -name "*.php" -not -path "./vendor/*" -not -path "./assets/*" | xargs -r php -l || echo "Syntax check completed"
 
       - name: Run unit tests
@@ -66,80 +68,56 @@ jobs:
           extensions: mbstring, xml, json, curl, dom
           coverage: none
           tools: composer:v2
+          ini-values: |
+            allow_url_fopen = On
+            allow_url_include = Off
 
       - run: composer install ${{ env.COMPOSER_FLAGS }}
 
-      - name: Start PHP server in background
+      - name: Start PHP server in background with logging
         run: |
-          # Start server and capture output to log file
+          # Start server and capture output
           php -S 127.0.0.1:8080 -t ${{ github.workspace }} > php-server.log 2>&1 &
-          echo $! > php_server.pid
-          echo "Server started with PID: $(cat php_server.pid)"
-          
-          # Give it a moment and check for immediate errors
+          SERVER_PID=$!
+          echo "Server PID: $SERVER_PID"
+          echo $SERVER_PID > php_server.pid
           sleep 2
-          
-      - name: Debug - Show PHP server status
+
+      - name: Debug - Verify server status
         run: |
-          echo "=== Checking if server is running ==="
+          echo "=== PHP Process ==="
           ps aux | grep "php -S" | grep -v grep || echo "Server process not found"
           
           echo ""
           echo "=== PHP Server Log ==="
-          cat php-server.log 2>/dev/null || echo "Log file not found or empty"
+          cat php-server.log 2>/dev/null || echo "No log output yet"
           
           echo ""
           echo "=== Network Status ==="
-          ss -tlnp | grep 8080 || echo "Port 8080 not listening"
+          ss -tlnp 2>/dev/null | grep 8080 || netstat -tlnp 2>/dev/null | grep 8080 || echo "Checking /proc/net/tcp"
           
           echo ""
-          echo "=== Available files in ${{ github.workspace }} ==="
-          ls -la ${{ github.workspace }} | head -10
+          echo "=== Test curl to localhost ==="
+          curl -v http://127.0.0.1:8080/ 2>&1 | head -15
 
-      - name: Wait for server to be ready
+      - name: Wait for server and run tests
         run: |
           echo "Waiting for server..."
           for i in $(seq 1 30); do
             RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ 2>/dev/null)
-            if [[ "$RESPONSE" =~ ^(200|302|404|403)$ ]]; then
+            if [[ "$RESPONSE" =~ ^(200|302|404|403|500)$ ]]; then
               echo "Server ready! HTTP response: $RESPONSE"
-              exit 0
+              echo "Running functional tests..."
+              vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
+              exit $?
             fi
             echo "Attempt $i: Server not ready (HTTP: $RESPONSE)"
             sleep 1
-            
-            # Show log growth during wait
-            if [ -f php-server.log ]; then
-              echo "Log size: $(wc -l < php-server.log) lines"
-            fi
           done
           echo "Server failed to start after 30 seconds"
           echo "=== Final PHP Server Log ==="
-          cat php-server.log
+          cat php-server.log 2>/dev/null
           exit 1
-
-      - name: Run functional tests
-        run: vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
-
-  # ===========================================================================
-  # Security Scan
-  # ===========================================================================
-  # security-scan:
-  #   name: Security Scan
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - uses: shivammathur/setup-php@v2
-  #       with:
-  #         php-version: '8.2'
-  #         extensions: mbstring, xml, json, curl
-  #         coverage: none
-
-  #     - run: composer install ${{ env.COMPOSER_FLAGS }}
-
-  #     - run: composer audit || echo "No vulnerabilities found"
 
   # ===========================================================================
   # Build Docker Image (only on master)
