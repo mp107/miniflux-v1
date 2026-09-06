@@ -98,14 +98,14 @@ jobs:
           
           echo ""
           echo "=== Test curl to localhost ==="
-          curl -v http://127.0.0.1:8080/ 2>&1 | head -15
+          curl -v http://127.0.0.1:8080/tests/ci/feed.xml 2>&1 | head -15
 
       - name: Wait for server and run tests
         run: |
           echo "Waiting for server..."
           for i in $(seq 1 30); do
-            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ 2>/dev/null)
-            if [[ "$RESPONSE" =~ ^(200|302|404|403|500)$ ]]; then
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/tests/ci/feed.xml 2>/dev/null)
+            if [[ "$RESPONSE" =~ ^(200)$ ]]; then
               echo "Server ready! HTTP response: $RESPONSE"
               echo "Running functional tests..."
               vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
