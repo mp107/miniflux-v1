@@ -34,6 +34,38 @@ abstract class BaseApiTest extends PHPUnit_Framework_TestCase
     {
         $db = Miniflux\Database\get_connection();
         $this->adminUser = $db->table(Miniflux\Model\User\TABLE)->eq('username', 'admin')->findOne();
+        
+        // Debug: Log server connectivity info
+        if (defined('DEBUG_MODE') && DEBUG_MODE) {
+            echo "\n[DEBUG] Connecting to API: " . API_URL . "\n";
+            echo "[DEBUG] Admin user: " . $this->adminUser['username'] . "\n";
+            
+            // Test basic connectivity
+            $ch = curl_init(API_URL);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            curl_setopt($ch, CURLOPT_USERPWD, $this->adminUser['username'] . ':' . $this->adminUser['api_token']);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                'jsonrpc' => '2.0',
+                'method' => 'getVersion',
+                'params' => [],
+                'id' => 1
+            ]));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_error = curl_error($ch);
+            curl_close($ch);
+            
+            echo "[DEBUG] HTTP Status: " . $http_code . "\n";
+            echo "[DEBUG] Response: " . $response . "\n";
+            if ($curl_error) {
+                echo "[DEBUG] cURL Error: " . $curl_error . "\n";
+            }
+        }
     }
 
     protected function getApiClient(array $user = array())
@@ -42,9 +74,16 @@ abstract class BaseApiTest extends PHPUnit_Framework_TestCase
             $user = $this->adminUser;
         }
 
-        $apiUserClient = new Client(API_URL);
-        $apiUserClient->authentication($user['username'], $user['api_token']);
-
-        return $apiUserClient;
+        try {
+            $apiUserClient = new Client(API_URL);
+            $apiUserClient->authentication($user['username'], $user['api_token']);
+            return $apiUserClient;
+        } catch (Exception $e) {
+            echo "\n[ERROR] Failed to create API client for " . API_URL . "\n";
+            echo "[ERROR] Exception: " . $e->getMessage() . "\n";
+            echo "[ERROR] Code: " . $e->getCode() . "\n";
+            echo "[ERROR] Trace: " . $e->getTraceAsString() . "\n";
+            throw $e;
+        }
     }
 }

@@ -3,7 +3,7 @@ services:
   miniflux:
     image: miniflux/miniflux:latest
     ports:
-     - "80:80"
+     - "8080:8080"
     volumes:
      - miniflux_data:/var/www/app/data
 volumes:

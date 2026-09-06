@@ -10,7 +10,7 @@ Use the automated build
 Every new commit on the repository trigger a new build on [Docker Hub](https://hub.docker.com/r/miniflux/miniflux/).
 
 ```bash
-docker run -d --name miniflux -p 80:80 -t miniflux/miniflux:latest
+docker run -d --name miniflux -p 8080:8080 -t miniflux/miniflux:latest
 ```
 
 The tag **latest** is the **development version** of Miniflux, use at your own risk.
