@@ -68,6 +68,10 @@ jobs:
           ini-values: |
             allow_url_fopen = On
             allow_url_include = Off
+            log_errors = On
+            error_log = php-error.log
+            error_reporting = E_ALL
+            display_errors = On
 
       - run: composer install ${{ env.COMPOSER_FLAGS }}
 
@@ -105,6 +109,9 @@ jobs:
               
               echo "=== Final PHP Server Log ==="
               cat php-server.log 2>/dev/null
+              
+              echo "=== PHP Error Log ==="
+              cat php-error.log 2>/dev/null || echo "No error log found"
               
               exit $TEST_EXIT_CODE
             fi
