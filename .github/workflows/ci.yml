@@ -70,8 +70,15 @@ jobs:
       - run: composer install ${{ env.COMPOSER_FLAGS }}
 
       - name: Start PHP server in background
-        run: php -S 127.0.0.1:8080 -t ${{ github.workspace }} > /dev/null 2>&1 & echo $! > php_server.pid
-
+        run: |
+          # Start server and capture output to log file
+          php -S 127.0.0.1:8080 -t ${{ github.workspace }} > php-server.log 2>&1 &
+          echo $! > php_server.pid
+          echo "Server started with PID: $(cat php_server.pid)"
+          
+          # Give it a moment and check for immediate errors
+          sleep 2
+          
       - name: Debug - Show PHP server status
         run: |
           echo "=== Checking if server is running ==="
@@ -91,14 +98,24 @@ jobs:
 
       - name: Wait for server to be ready
         run: |
+          echo "Waiting for server..."
           for i in $(seq 1 30); do
-            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ 2>/dev/null | grep -qE "200|404"; then
-              echo "Server is ready"
+            RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/ 2>/dev/null)
+            if [[ "$RESPONSE" =~ ^(200|404|403)$ ]]; then
+              echo "Server ready! HTTP response: $RESPONSE"
               exit 0
             fi
+            echo "Attempt $i: Server not ready (HTTP: $RESPONSE)"
             sleep 1
+            
+            # Show log growth during wait
+            if [ -f php-server.log ]; then
+              echo "Log size: $(wc -l < php-server.log) lines"
+            fi
           done
           echo "Server failed to start after 30 seconds"
+          echo "=== Final PHP Server Log ==="
+          cat php-server.log
           exit 1
 
       - name: Run functional tests
