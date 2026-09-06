@@ -9,5 +9,6 @@
         <const name="FEVER_API_URL" value="http://127.0.0.1:8080/fever/" />
         <const name="FEED_URL" value="http://127.0.0.1:8080/tests/ci/feed.xml" />
         <const name="DB_FILENAME" value="data/db.sqlite" />
+        <const name="DEBUG_MODE" value="true" />
     </php>
 </phpunit>

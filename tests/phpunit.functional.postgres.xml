@@ -12,5 +12,6 @@
         <const name="DB_USERNAME" value="postgres" />
         <const name="DB_PASSWORD" value="" />
         <const name="DB_NAME" value="miniflux_functional_test" />
+        <const name="DEBUG_MODE" value="true" />
     </php>
 </phpunit>
