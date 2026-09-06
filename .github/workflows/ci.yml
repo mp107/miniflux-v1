@@ -71,6 +71,11 @@ jobs:
 
       - run: composer install ${{ env.COMPOSER_FLAGS }}
 
+      - name: Fix permissions for SQLite
+        run: |
+          mkdir -p data
+          chmod -R 777 data
+
       - name: Start PHP server in background with logging
         run: |
           # Start server and capture output
@@ -87,10 +92,6 @@ jobs:
             RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/tests/ci/feed.xml 2>/dev/null)
             if [[ "$RESPONSE" =~ ^(200)$ ]]; then
               echo "Server ready! HTTP response: $RESPONSE"
-              
-              echo "--- Fixing permissions for SQLite ---"
-              mkdir -p data
-              chmod -R 777 data
               
               echo "--- Running functional tests ---"
               # Turn off 'exit on error' so we can capture the log before failing
