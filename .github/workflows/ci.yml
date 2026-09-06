@@ -93,8 +93,11 @@ jobs:
             if [[ "$RESPONSE" =~ ^(200)$ ]]; then
               echo "Server ready! HTTP response: $RESPONSE"
               
+              # Test JSON-RPC endpoint specifically
+              echo "Testing JSON-RPC endpoint..."
+              curl -v http://127.0.0.1:8080/jsonrpc.php
+              
               echo "--- Running functional tests ---"
-              # Turn off 'exit on error' so we can capture the log before failing
               set +e 
               vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
               TEST_EXIT_CODE=$?
