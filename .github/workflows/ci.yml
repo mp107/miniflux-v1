@@ -80,23 +80,6 @@ jobs:
           echo $SERVER_PID > php_server.pid
           sleep 2
 
-      - name: Debug - Verify server status
-        run: |
-          echo "=== PHP Process ==="
-          ps aux | grep "php -S" | grep -v grep || echo "Server process not found"
-          
-          echo ""
-          echo "=== PHP Server Log ==="
-          cat php-server.log 2>/dev/null || echo "No log output yet"
-          
-          echo ""
-          echo "=== Network Status ==="
-          ss -tlnp 2>/dev/null | grep 8080 || netstat -tlnp 2>/dev/null | grep 8080 || echo "Checking /proc/net/tcp"
-          
-          echo ""
-          echo "=== Test curl to localhost ==="
-          curl -v http://127.0.0.1:8080/tests/ci/feed.xml 2>&1 | head -15
-
       - name: Wait for server and run tests
         run: |
           echo "Waiting for server..."
@@ -104,15 +87,27 @@ jobs:
             RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/tests/ci/feed.xml 2>/dev/null)
             if [[ "$RESPONSE" =~ ^(200)$ ]]; then
               echo "Server ready! HTTP response: $RESPONSE"
-              echo "Running functional tests..."
+              
+              echo "--- Fixing permissions for SQLite ---"
+              mkdir -p data
+              chmod -R 777 data
+              
+              echo "--- Running functional tests ---"
+              # Turn off 'exit on error' so we can capture the log before failing
+              set +e 
               vendor/bin/phpunit -c tests/phpunit.functional.sqlite.xml
-              exit $?
+              TEST_EXIT_CODE=$?
+              set -e
+              
+              echo "=== Final PHP Server Log ==="
+              cat php-server.log 2>/dev/null
+              
+              exit $TEST_EXIT_CODE
             fi
             echo "Attempt $i: Server not ready (HTTP: $RESPONSE)"
             sleep 1
           done
           echo "Server failed to start after 30 seconds"
-          echo "=== Final PHP Server Log ==="
           cat php-server.log 2>/dev/null
           exit 1
 
