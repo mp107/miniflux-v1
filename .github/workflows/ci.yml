@@ -72,6 +72,23 @@ jobs:
       - name: Start PHP server in background
         run: php -S 127.0.0.1:8080 -t ${{ github.workspace }} > /dev/null 2>&1 & echo $! > php_server.pid
 
+      - name: Debug - Show PHP server status
+        run: |
+          echo "=== Checking if server is running ==="
+          ps aux | grep "php -S" | grep -v grep || echo "Server process not found"
+          
+          echo ""
+          echo "=== PHP Server Log ==="
+          cat php-server.log 2>/dev/null || echo "Log file not found or empty"
+          
+          echo ""
+          echo "=== Network Status ==="
+          ss -tlnp | grep 8080 || echo "Port 8080 not listening"
+          
+          echo ""
+          echo "=== Available files in ${{ github.workspace }} ==="
+          ls -la ${{ github.workspace }} | head -10
+
       - name: Wait for server to be ready
         run: |
           for i in $(seq 1 30); do
