@@ -61,7 +61,7 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.0'
+          php-version: '7.4'
           extensions: mbstring, xml, json, curl, dom, sqlite3, pdo_sqlite
           coverage: none
           tools: composer:v2
